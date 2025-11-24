@@ -1,0 +1,18 @@
+line-length = 100
+target-version = "py311"
+
+# Enable Ruff rule families:
+# I → import sorting
+# D → docstring rules
+# E & F → common Python errors
+extend-select = ["I", "D", "E", "F"]
+
+# Ignore specific rules (safe defaults)
+ignore = [
+    "D203",  # Conflicts with Black
+    "D213",  # Conflicts with Black
+]
+
+[flake8-quotes]
+inline-quotes = "double"
+multiline-quotes = "double"

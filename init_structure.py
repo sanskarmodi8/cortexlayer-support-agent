@@ -1,10 +1,14 @@
+"""Creates inital project structure (doesn't overwrite files if already present)."""
+
 import os
 
 # Helper functions
 
+
 def create_dir(path):
     """Create directory if it doesn't exist."""
     os.makedirs(path, exist_ok=True)
+
 
 def create_file(path, content=""):
     """Create file only if it doesn't already exist."""
@@ -26,71 +30,61 @@ structure = [
     "backend/tests",
     "frontend/widget",
     "frontend/admin/src",
-    "infra"
+    "infra",
 ]
 
 files = {
     # Backend core
     "backend/app/main.py": "# Entry point: FastAPI boot file\n",
-    
+    "backend/requirements.txt": "",
+    "backend/Dockerfile": "",
     # Routes
     "backend/app/routes/query.py": "",
     "backend/app/routes/upload.py": "",
     "backend/app/routes/admin.py": "",
     "backend/app/routes/auth.py": "",
-
     # RAG pipeline
     "backend/app/rag/retriever.py": "",
     "backend/app/rag/prompt.py": "",
     "backend/app/rag/generator.py": "",
     "backend/app/rag/pipeline.py": "",
-
     # Ingestion
     "backend/app/ingestion/pdf_reader.py": "",
     "backend/app/ingestion/text_reader.py": "",
     "backend/app/ingestion/url_scraper.py": "",
     "backend/app/ingestion/chunker.py": "",
     "backend/app/ingestion/embedder.py": "",
-
     # Services
     "backend/app/services/billing.py": "",
     "backend/app/services/analytics.py": "",
     "backend/app/services/usage_limits.py": "",
     "backend/app/services/client_manager.py": "",
-
     # Models
     "backend/app/models/client.py": "",
     "backend/app/models/usage.py": "",
     "backend/app/models/documents.py": "",
     "backend/app/models/chat_logs.py": "",
-
     # Core
     "backend/app/core/config.py": "",
     "backend/app/core/database.py": "",
     "backend/app/core/vectorstore.py": "",
     "backend/app/core/auth.py": "",
-
     # Utils
     "backend/app/utils/file_utils.py": "",
     "backend/app/utils/rate_limit.py": "",
     "backend/app/utils/s3.py": "",
     "backend/app/utils/logger.py": "",
-
     # Tests
     "backend/tests/test_rag.py": "",
-
     # Frontend
     "frontend/widget/embed.js": "",
     "frontend/widget/styles.css": "",
-
     # Admin dashboard placeholder
-    "frontend/admin/package.json": "{\n  \"name\": \"cortexlayer-admin\"\n}\n",
-
+    "frontend/admin/package.json": '{\n  "name": "cortexlayer-admin"\n}\n',
     # Infra
     "infra/docker-compose.yml": "",
     "infra/nginx.conf": "",
     "infra/README.md": "",
-
     # Root files
     ".env": "",
     "README.md": "",

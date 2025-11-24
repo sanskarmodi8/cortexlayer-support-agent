@@ -182,29 +182,68 @@ Core Stack:
 
 # 📦 **5. Repository Structure**
 
-```
-cortexlayer-chat-support/
+cortexlayer-support-agent/
 │
 ├── backend/
 │   ├── app/
-│   │   ├── main.py
-│   │   ├── routes/
-│   │   ├── rag/
-│   │   ├── ingestion/
-│   │   ├── services/
-│   │   ├── models/
-│   │   └── core/
-│   ├── tests/
-│   └── Dockerfile
+│   │   ├── main.py                 # Entry point: Boots FastAPI + registers routers
+│   │   ├── routes/                 # API endpoints only (thin layer)
+│   │   │   ├── query.py               # /query → user chat requests
+│   │   │   ├── upload.py              # /upload → document ingestion
+│   │   │   ├── admin.py               # Admin analytics, metrics, client data
+│   │   │   └── auth.py                # JWT login / token refresh
+│   │   ├── rag/                    # Retrieval-Augmented Generation logic
+│   │   │   ├── retriever.py           # Vector DB lookup 
+│   │   │   ├── prompt.py              # Prompt templates + citation formatting
+│   │   │   ├── generator.py           # LLM calls
+│   │   │   └── pipeline.py            # Complete RAG pipeline (retrieve → prompt → generate)
+│   │   ├── ingestion/              # Document ingestion (extract, chunk, embed)
+│   │   │   ├── pdf_reader.py          # PDF → text
+│   │   │   ├── text_reader.py         # .txt/.md or simple text files
+│   │   │   ├── url_scraper.py         # Scrape URLs → clean text
+│   │   │   ├── chunker.py             # Chunk logic (size, overlap, rules)
+│   │   │   └── embedder.py            # Convert chunks → embeddings
+│   │   ├── services/               # Business logic layer (NOT backend core)
+│   │   │   ├── billing.py             # Cost calc, usage logging, overages
+│   │   │   ├── analytics.py           # Usage stats, traffic data, top queries
+│   │   │   ├── usage_limits.py        # Enforce plan limits (Starter/Growth/Scale)
+│   │   │   └── client_manager.py      # CRUD for client accounts & settings
+│   │   ├── models/                 # Database ORM models
+│   │   │   ├── client.py              # clients table
+│   │   │   ├── usage.py               # usage_logs table
+│   │   │   ├── documents.py           # document metadata + storage refs
+│   │   │   └── chat_logs.py           # stored chat history (30-day retention)
+│   │   ├── core/                   # Core dependencies & config
+│   │   │   ├── config.py              # Load env vars / global settings
+│   │   │   ├── database.py            # DB connection pool
+│   │   │   ├── vectorstore.py         # Setup Vector DB store(s)
+│   │   │   └── auth.py                # JWT utils (encode/decode)
+│   │   └── utils/                  # Helper utilities (generic, reusable)
+│   │       ├── file_utils.py          # Validate file types, sizes, etc.
+│   │       ├── rate_limit.py          # Redis rate limiting
+│   │       ├── s3.py                  # DigitalOcean Spaces upload/download
+│   │       └── logger.py              # Logging + Sentry integration
+│   ├── tests/                       # Minimal tests (unit + integration)
+│   │   └── test_rag.py                # Test retrieval accuracy / pipeline sanity
+│   ├── requirements.txt              # Python dependencies
+│   └── Dockerfile                    # Backend Docker container
 │
 ├── frontend/
-│   ├── widget/        # embed.js
-│   └── admin/         # admin panel react
+│   ├── widget/                     # Embeddable JS chatbot widget
+│   │   ├── embed.js                   # Script to load + display chatbox
+│   │   └── styles.css                # Widget styling
+│   └── admin/                      # React admin dashboard
+│       ├── src/                       # Admin panel components/pages
+│       └── package.json               # Frontend deps
 │
-├── scripts/
-├── infra/
-└── README.md
-```
+├── infra/                          # Deployment + devops
+│   ├── docker-compose.yml             # Backend + Redis + DB + Nginx
+│   ├── nginx.conf                     # Reverse proxy rules
+│   └── README.md                      # Infra setup instructions
+│
+├── .env                            # environment variables
+└── README.md                       # Main project documentation
+
 
 ---
 

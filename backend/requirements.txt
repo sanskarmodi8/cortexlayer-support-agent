@@ -21,10 +21,11 @@ alembic==1.13.1
 # Vector Store / Embeddings
 numpy>=1.24.0
 faiss-cpu==1.7.4
-langchain==0.2.0
-langchain-community==0.2.0
-langchain-openai==0.1.2
-langchain-groq==0.1.0
+langchain==0.2.11
+langchain-core==0.2.33
+langchain-community==0.2.10
+langchain-openai==0.1.20
+langchain-groq==0.1.5
 
 
 # Document Ingestion

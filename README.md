@@ -1,292 +1,278 @@
-# **CortexLayer — AI Support & Knowledge Bot**
+# **CortexLayer Support Agent — Backend Service**
 
-> Private backend repository for CortexLayer’s first commercial AI service: a production-ready RAG-based support automation system with document ingestion, vector search, chat API, usage tracking, billing limits, and optional multi-channel integrations.
+> Private backend powering CortexLayer’s first commercial AI service:
+> an enterprise-grade RAG support automation system with document ingestion, vector search, multi-channel chat APIs, usage metering, billing enforcement, and operational tooling.
+
+**This repository contains the complete backend engine of the CortexLayer AI Support & Knowledge Bot.**
+Frontend UI (dashboard, widget, website) lives in a separate repository.
 
 ---
 
 # 🚀 **1. Overview**
 
-**CortexLayer Chat Support** is the backend powering our first commercial AI service.
+The CortexLayer Support Agent enables businesses to automate customer support using their own documentation.
 
-Clients upload documents → the system ingests & embeds them → end-users chat through a web widget or WhatsApp → answers are generated using a controlled RAG pipeline with citations.
+Flow:
 
-This repository contains:
+1. Clients upload documents
+2. System ingests, chunks, and embeds them
+3. FAISS vector search retrieves relevant context
+4. RAG pipeline generates accurate answers with citations
+5. End-users interact through API or WhatsApp
+6. Usage is logged and billing enforced using Stripe
 
-- FastAPI backend
-- Document ingestion & chunking pipeline
-- Embedding + vector search (FAISS)
-- Retrieval-augmented generation (Groq/OpenAI)
-- Usage tracking + per-plan limits
-- Basic admin dashboard (React)
-- Embeddable web widget
-- Optional WhatsApp integration
-- Stripe billing hooks (overages, throttling, subscription management)
+This backend provides:
 
-Everything here is private and only for internal CortexLayer use.
-
----
-
-# 🧠 **2. Service Features (Final Production Specs)**
-
-## **Starter Plan**
-
-- Web-embedded chatbot
-
-- Up to **10 documents**
-
-- Up to **1,000 conversations/month**
-
-- Standard RAG (chunk → embed → retrieve)
-
-- Basic analytics:
-
-  - Query count
-  - Daily usage
-
-- Email fallback
-
-- Model: **Groq Mixtral-8x7B**
-
-- One-time setup: **$399**
-
-- Monthly: **$79**
-
-### **Internal Limits (Hard Enforcement)**
-
-- Max file size: **5MB**
-- Max chunks/doc: **250**
-- Rate limit: **15 requests/min**
-- Soft cap: **1,250 chats** (post-cap throttle)
+* Full RAG pipeline
+* Multi-tenant client isolation
+* Upload + Query REST APIs
+* WhatsApp webhook + message handler
+* Stripe billing + overage logic
+* Email fallback service
+* Human handoff inbox (backend side)
+* Usage analytics + limits
+* Sentry monitoring
+* DB + FAISS snapshot scripts
 
 ---
 
-## **Growth Plan**
+# 🧠 **2. Service Plans & Features**
 
-Everything in Starter +:
+### **Starter Plan**
 
-- WhatsApp integration (Meta/Twilio)
+* Web-embedded chatbot (frontend repo)
+* Upload up to **10 documents**
+* **1,000** conversations/month
+* Standard RAG
+* Basic analytics
+* Email fallback
+* Model: **Mixtral-8x7B (Groq)**
+* Setup: **$399**, Monthly: **$79**
 
-- Up to **50 documents**
+**Backend enforces:**
 
-- Up to **5,000 conversations/month**
-
-- Advanced analytics:
-
-  - Latency
-  - Top queries
-  - Document relevance stats
-
-- Human handoff inbox
-
-- Custom widget branding
-
-- Models: Mixtral + GPT-4o-mini fallback
-
-- Setup: **$899**
-
-- Monthly: **$199**
-
-### **Internal Limits**
-
-- Max file size: **10MB**
-- Max chunks/doc: **500**
-- Rate limit: **50 requests/min**
-- Max WhatsApp messages: **2,000/mo**
-- Soft cap: **6,000 chats**
+* Max file size: **5MB**
+* Max chunks/doc: **250**
+* Rate limit: **15 req/min**
+* Soft cap: **1,250 chats**
 
 ---
 
-## **Scale Plan**
+### **Growth Plan**
 
-Everything in Growth +:
+Everything in Starter, plus:
 
-- CRM integrations (HubSpot/Zoho/REST)
-- High-volume docs & conversations
-- Per-client API keys
-- Multilingual support
-- Soft SLA: **99.5% uptime**
-- Dedicated success manager (3-month support)
-- Primary model: **GPT-4o**, fallback: Mixtral
-- Setup: **$1,499**
-- Monthly: **$349**
+* **WhatsApp integration (Meta/Twilio)**
+* Up to **50 documents**
+* **5,000** conversations/month
+* Advanced analytics (latency, relevance, top queries)
+* **Human handoff inbox**
+* Model fallback: GPT-4o-mini
+* Setup: **$899**, Monthly: **$199**
 
-### **Internal Limits**
+**Backend enforces:**
 
-- Max file size: **20MB**
-- Max chunks/doc: **3,000**
-- Rate limit: **100 requests/min**
-- Soft cap: **50,000 chats/month**
-- Overages billed automatically
-- FAISS snapshots daily
+* Max file size: **10MB**
+* Max chunks/doc: **500**
+* Rate limit: **50 req/min**
+* WhatsApp: **2,000 msgs/month**
+* Soft cap: **6,000 chats**
 
 ---
 
-# 💰 **3. Billing, Cost Controls & Overages**
+### **Scale Plan**
 
-To avoid losses:
+Everything in Growth, plus:
 
-- All embedding + LLM usage is **metered per request**
-- Costs stored in `usage_logs` (tokens, embeddings, generation cost)
-- Each plan has soft caps & hard throttles
-- Stripe manages payment + invoices + card failures
+* High-volume ingestion
+* Per-client API keys
+* Priority models: GPT-4o
+* Setup: **$1,499**, Monthly: **$349**
 
-### **Overage Billing**
+**Backend enforces:**
 
-- Overages billed **at cost + 10% margin**
-- Conversations above plan cap:
-
-  - $0.02–$0.04 per query (finalized after model pricing)
-
-- Embedding overage per 1k vectors: billed at cost
-- LLM generation per 1k tokens: cost + margin
-
-### **Non-payment Rules**
-
-- If invoice fails → client enters **grace state (7 days)**
-- After 7 days → chatbot disabled
-- Reactivates instantly upon payment
+* Max file size: **20MB**
+* Max chunks/doc: **3,000**
+* Rate limit: **100 req/min**
+* Soft cap: **50,000 chats**
+* Daily FAISS snapshots
 
 ---
 
-# 🏗️ **4. Architecture**
+# 💰 **3. Billing, Usage Tracking & Overages**
+
+### **What the backend tracks**
+
+* Tokens per request
+* Embedding cost
+* Chat generation cost
+* Conversation count
+* WhatsApp messages
+* File sizes & chunk sizes
+
+All usage stored in `usage_logs` table.
+
+### **Billing Features (Implemented Here)**
+
+* Stripe subscription creation
+* Stripe webhook processing
+* Invoice failure → 7-day grace period
+* Auto-disable client after grace
+* Overages billed at **cost + 10% margin**
+* Reactivation on payment
+
+---
+
+# 🏗️ **4. System Architecture**
 
 ```
 Client Upload
    ↓
-Ingestion Pipeline (PDF/Text/URL → text → chunks)
+Ingestion (PDF/TXT/URL → text → chunks)
    ↓
-Embeddings (OpenAI/Groq via LangChain)
+Embeddings (OpenAI/Groq)
    ↓
-Vector DB (FAISS, optional Pinecone)
+FAISS Vector Store
    ↓
-Retriever → Prompt Builder (citations)
+Retriever → Prompt Builder → LLM
    ↓
-LLM Response (Groq/OpenAI)
-   ↓
-Widget / WhatsApp / API
+API / WhatsApp
    ↓
 Usage Logging → Billing Enforcement → Analytics
 ```
 
-Core Stack:
+### **Tech Stack**
 
-- FastAPI
-- LangChain (chunking + vector DB wrappers)
-- FAISS local (default)
-- Groq + OpenAI LLMs
-- PostgreSQL
-- Redis (rate limit + async tasks)
-- DigitalOcean Spaces (document storage)
-- Docker
+* FastAPI
+* LangChain (RAG components)
+* FAISS local vector DB
+* Groq + OpenAI LLMs
+* PostgreSQL
+* Redis
+* S3-compatible storage (DigitalOcean Spaces)
+* Stripe
+* Sentry
+* Docker
 
 ---
 
 # 📦 **5. Repository Structure**
 
+```
 cortexlayer-support-agent/
 │
 ├── backend/
-│ ├── app/
-│ │ ├── main.py # Entry point: Boots FastAPI + registers routers
-│ │ ├── routes/ # API endpoints only (thin layer)
-│ │ │ ├── query.py # /query → user chat requests
-│ │ │ ├── upload.py # /upload → document ingestion
-│ │ │ ├── admin.py # Admin analytics, metrics, client data
-│ │ │ └── auth.py # JWT login / token refresh
-│ │ ├── rag/ # Retrieval-Augmented Generation logic
-│ │ │ ├── retriever.py # Vector DB lookup
-│ │ │ ├── prompt.py # Prompt templates + citation formatting
-│ │ │ ├── generator.py # LLM calls
-│ │ │ └── pipeline.py # Complete RAG pipeline (retrieve → prompt → generate)
-│ │ ├── ingestion/ # Document ingestion (extract, chunk, embed)
-│ │ │ ├── pdf_reader.py # PDF → text
-│ │ │ ├── text_reader.py # .txt/.md or simple text files
-│ │ │ ├── url_scraper.py # Scrape URLs → clean text
-│ │ │ ├── chunker.py # Chunk logic (size, overlap, rules)
-│ │ │ └── embedder.py # Convert chunks → embeddings
-│ │ ├── services/ # Business logic layer (NOT backend core)
-│ │ │ ├── billing.py # Cost calc, usage logging, overages
-│ │ │ ├── analytics.py # Usage stats, traffic data, top queries
-│ │ │ ├── usage_limits.py # Enforce plan limits (Starter/Growth/Scale)
-│ │ │ └── client_manager.py # CRUD for client accounts & settings
-│ │ ├── models/ # Database ORM models
-│ │ │ ├── client.py # clients table
-│ │ │ ├── usage.py # usage_logs table
-│ │ │ ├── documents.py # document metadata + storage refs
-│ │ │ └── chat_logs.py # stored chat history (30-day retention)
-│ │ ├── core/ # Core dependencies & config
-│ │ │ ├── config.py # Load env vars / global settings
-│ │ │ ├── database.py # DB connection pool
-│ │ │ ├── vectorstore.py # Setup Vector DB store(s)
-│ │ │ └── auth.py # JWT utils (encode/decode)
-│ │ └── utils/ # Helper utilities (generic, reusable)
-│ │ ├── file_utils.py # Validate file types, sizes, etc.
-│ │ ├── rate_limit.py # Redis rate limiting
-│ │ ├── s3.py # DigitalOcean Spaces upload/download
-│ │ └── logger.py # Logging + Sentry integration
-│ ├── tests/ # Minimal tests (unit + integration)
-│ │ └── test_rag.py # Test retrieval accuracy / pipeline sanity
-│ ├── requirements.txt # Python dependencies
-│ └── Dockerfile # Backend Docker container
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── routes/
+│   │   │   ├── auth.py
+│   │   │   ├── upload.py
+│   │   │   ├── query.py
+│   │   │   ├── admin.py
+│   │   │   ├── whatsapp.py
+│   │   │   └── fallback.py
+│   │   ├── rag/
+│   │   │   ├── retriever.py
+│   │   │   ├── prompt.py
+│   │   │   ├── generator.py
+│   │   │   └── pipeline.py
+│   │   ├── ingestion/
+│   │   │   ├── pdf_reader.py
+│   │   │   ├── text_reader.py
+│   │   │   ├── url_scraper.py
+│   │   │   ├── chunker.py
+│   │   │   └── embedder.py
+│   │   ├── services/
+│   │   │   ├── billing.py
+│   │   │   ├── usage_limits.py
+│   │   │   ├── analytics.py
+│   │   │   ├── client_manager.py
+│   │   │   ├── whatsapp_service.py
+│   │   │   ├── email_service.py
+│   │   │   └── handoff_service.py
+│   │   ├── models/
+│   │   │   ├── client.py
+│   │   │   ├── documents.py
+│   │   │   ├── usage.py
+│   │   │   ├── chat_logs.py
+│   │   │   └── handoff.py
+│   │   ├── core/
+│   │   │   ├── config.py
+│   │   │   ├── database.py
+│   │   │   ├── auth.py
+│   │   │   ├── vectorstore.py
+│   │   └── utils/
+│   │       ├── file_utils.py
+│   │       ├── logger.py
+│   │       ├── rate_limit.py
+│   │       ├── s3.py
+│   │       └── validators.py
+│   ├── tests/
+│   ├── requirements.txt
+│   └── Dockerfile
 │
-├── frontend/
-│ ├── widget/ # Embeddable JS chatbot widget
-│ │ ├── embed.js # Script to load + display chatbox
-│ │ └── styles.css # Widget styling
-│ └── admin/ # React admin dashboard
-│ ├── src/ # Admin panel components/pages
-│ └── package.json # Frontend deps
+├── infra/
+│   ├── docker-compose.yml
+│   ├── nginx.conf
+│   └── README.md
 │
-├── infra/ # Deployment + devops
-│ ├── docker-compose.yml # Backend + Redis + DB + Nginx
-│ ├── nginx.conf # Reverse proxy rules
-│ └── README.md # Infra setup instructions
+├── scripts/
+│   ├── backup_faiss.py
+│   ├── backup_db.py
+│   └── rebuild_vectorstore.py
 │
-├── .env # environment variables
-└── README.md # Main project documentation
+├── .env.example
+└── README.md
+```
 
 ---
 
 # 🔐 **6. Security Notes**
 
-- JWT auth for admin + clients
-- Strict per-client data separation
-- Presigned S3 uploads
-- All traffic HTTPS only
-- CORS allowed only for approved domains
-- Redis-level isolation keys
-- Daily backups for DB and FAISS
-- No data used for model training
+* JWT authentication for admin + clients
+* Per-client data isolation (DB & FAISS separation)
+* All uploads validated & scanned
+* S3 presigned URLs
+* HTTPS-only
+* Redis keys scoped per client
+* Daily backups
+* No training on customer data
 
 ---
 
-# ⚙️ **7. Setup and Environment Variables for backend**
+# ⚙️ **7. Setup**
+
+Install dependencies:
 
 ```
-pip install -r backend/requirements.txt" && pip install pre-commit && pre-commit install
+pip install -r backend/requirements.txt && pip install pre-commit && pre-commit install
 ```
+
+Environment variables:
 
 ```
 OPENAI_API_KEY=
 GROQ_API_KEY=
-DO_SPACES_KEY=
-DO_SPACES_SECRET=
 DATABASE_URL=
 REDIS_URL=
 JWT_SECRET=
-PINECONE_API_KEY=
+
+DO_SPACES_KEY=
+DO_SPACES_SECRET=
+
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 META_WHATSAPP_TOKEN=
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
 ```
 
 ---
 
 # ▶️ **8. Running Locally**
 
-### With Docker:
+### Docker:
 
 ```
 docker-compose up --build
@@ -301,73 +287,69 @@ uvicorn app.main:app --reload
 
 ---
 
-# 🧪 **9. API Examples**
+# 🧪 **9. API Samples**
 
-### Upload document:
+### Upload:
 
 ```
 POST /upload
-multipart/form-data: file=<doc>
 ```
 
 ### Query:
 
 ```
 POST /query
-{
-  "client_id": "abc",
-  "query": "refund policy?"
-}
 ```
 
-### Analytics:
+### WhatsApp:
 
 ```
-GET /admin/analytics?client_id=abc
+POST /whatsapp/webhook
+```
+
+### Admin analytics:
+
+```
+GET /admin/analytics
+```
+
+### Handoff inbox:
+
+```
+GET /admin/handoff
 ```
 
 ---
 
-# 📊 **10. Usage & Throttling Logic**
+# 📊 **10. Usage & Throttling Rules**
 
-Each request performs:
+Each request checks:
 
-1. Plan check (Starter/Growth/Scale)
-2. Check conversations count
-3. Document count
-4. Rate limit (Redis)
-5. Cost tracking
-6. Throttle if exceeded
+1. Current plan
+2. Monthly usage
+3. Token consumption
+4. Redis rate limits
+5. Document + chunk limits
+6. Soft cap throttle
+7. Hard cap disable
+8. Logging → billing
 
-Prevents losses & abuse.
+Backend ensures no plan abuse or cost leaks.
 
 ---
 
 # 🗄️ **11. Data Retention**
 
-- User queries stored 30 days
-- Docs stored until client deletes
-- GDPR/CCPA compliant simple deletion API
-- No training usage
+* Chat logs stored 30 days
+* Document data stored until client deletes
+* GDPR-friendly deletion API
+* Backups rotated daily
 
 ---
 
-# 📡 **12. Monitoring, Backups & SLA**
+# 📡 **12. Monitoring & Backups**
 
-### Monitoring
-
-- Sentry (errors)
-- Prometheus (metrics)
-- Grafana (dashboards)
-
-### Backups
-
-- DB backup daily
-- FAISS snapshot daily
-- Spaces versioning on
-
-### SLA
-
-- 99.5% uptime target
-- Excludes 3rd-party outages
-- Maintenance notices 48 hrs prior
+* Sentry for error tracking
+* Structured logging
+* Daily DB + FAISS snapshots
+* Stripe webhook logs

@@ -43,6 +43,8 @@ files = {
     "backend/app/routes/upload.py": "",
     "backend/app/routes/admin.py": "",
     "backend/app/routes/auth.py": "",
+    "backend/app/routes/whatsapp.py": "",
+    "backend/app/routes/fallback.py": "",
     # RAG pipeline
     "backend/app/rag/retriever.py": "",
     "backend/app/rag/prompt.py": "",
@@ -59,11 +61,15 @@ files = {
     "backend/app/services/analytics.py": "",
     "backend/app/services/usage_limits.py": "",
     "backend/app/services/client_manager.py": "",
+    "backend/app/services/whatsapp_service.py": "",
+    "backend/app/services/email_service.py": "",
+    "backend/app/services/handoff_service.py": "",
     # Models
     "backend/app/models/client.py": "",
     "backend/app/models/usage.py": "",
     "backend/app/models/documents.py": "",
     "backend/app/models/chat_logs.py": "",
+    "backend/app/models/handoff.py": "",
     # Core
     "backend/app/core/config.py": "",
     "backend/app/core/database.py": "",

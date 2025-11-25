@@ -161,68 +161,93 @@ Usage Logging → Billing Enforcement → Analytics
 ```
 cortexlayer-support-agent/
 │
-├── backend/
-│   ├── app/
-│   │   ├── main.py
-│   │   ├── routes/
+├── backend/                         # Backend service root
+│   ├── app/                         # Main backend application
+│   │   ├── main.py                  # FastAPI entry point (app instance, router include)
+│   │   │
+│   │   ├── core/                    # Core system components (DB, config, auth)
+│   │   │   ├── config.py            # Environment variables & global settings
+│   │   │   ├── database.py          # SQLAlchemy engine + SessionLocal
+│   │   │   ├── auth.py              # JWT utilities (encode/decode)
+│   │   │   └── vectorstore.py       # FAISS init, load/save logic
+│   │   │
+│   │   ├── models/                  # SQLAlchemy ORM models
+│   │   │   ├── client.py            # Clients table
+│   │   │   ├── documents.py         # Document metadata table
+│   │   │   ├── usage.py             # Usage logs & cost tracking
+│   │   │   ├── chat_logs.py         # Chat history (30-day retention)
+│   │   │   └── handoff.py           # Human escalation queue
+│   │   │
+│   │   ├── schemas/                 # Pydantic request/response schemas
 │   │   │   ├── auth.py
-│   │   │   ├── upload.py
+│   │   │   ├── client.py
+│   │   │   ├── document.py
 │   │   │   ├── query.py
-│   │   │   ├── admin.py
 │   │   │   ├── whatsapp.py
-│   │   │   └── fallback.py
-│   │   ├── rag/
-│   │   │   ├── retriever.py
-│   │   │   ├── prompt.py
-│   │   │   ├── generator.py
-│   │   │   └── pipeline.py
-│   │   ├── ingestion/
+│   │   │   └── billing.py
+│   │   │
+│   │   ├── middleware/              # Global middlewares
+│   │   │   ├── logging.py           # Structured request logging
+│   │   │   ├── request_id.py        # X-Request-ID injection
+│   │   │   ├── cors.py              # CORS settings
+│   │   │   └── exceptions.py        # Custom exception handlers
+│   │   │
+│   │   ├── routes/                  # API endpoints only (thin controllers)
+│   │   │   ├── auth.py              # Login, refresh, admin login
+│   │   │   ├── upload.py            # Document upload → ingestion pipeline
+│   │   │   ├── query.py             # RAG chat endpoint
+│   │   │   ├── whatsapp.py          # WhatsApp webhook endpoint
+│   │   │   ├── fallback.py          # Email fallback route
+│   │   │   └── admin.py             # Analytics + backoffice APIs
+│   │   │
+│   │   ├── ingestion/               # Raw ingestion → text → chunks → embeddings
 │   │   │   ├── pdf_reader.py
 │   │   │   ├── text_reader.py
 │   │   │   ├── url_scraper.py
 │   │   │   ├── chunker.py
 │   │   │   └── embedder.py
-│   │   ├── services/
-│   │   │   ├── billing.py
-│   │   │   ├── usage_limits.py
-│   │   │   ├── analytics.py
-│   │   │   ├── client_manager.py
-│   │   │   ├── whatsapp_service.py
-│   │   │   ├── email_service.py
-│   │   │   └── handoff_service.py
-│   │   ├── models/
-│   │   │   ├── client.py
-│   │   │   ├── documents.py
-│   │   │   ├── usage.py
-│   │   │   ├── chat_logs.py
-│   │   │   └── handoff.py
-│   │   ├── core/
-│   │   │   ├── config.py
-│   │   │   ├── database.py
-│   │   │   ├── auth.py
-│   │   │   ├── vectorstore.py
-│   │   └── utils/
+│   │   │
+│   │   ├── rag/                     # Full RAG pipeline implementation
+│   │   │   ├── retriever.py
+│   │   │   ├── prompt.py
+│   │   │   ├── generator.py
+│   │   │   └── pipeline.py
+│   │   │
+│   │   ├── services/                # Business logic layer
+│   │   │   ├── billing.py           # Stripe billing, usage cost, overages
+│   │   │   ├── usage_limits.py      # Per-plan throttling & hard caps
+│   │   │   ├── analytics.py         # Admin analytics logic
+│   │   │   ├── client_manager.py    # CRUD & account ops
+│   │   │   ├── whatsapp_service.py  # WhatsApp processing pipeline
+│   │   │   ├── email_service.py     # Email fallback delivery
+│   │   │   └── handoff_service.py   # Escalation logic
+│   │   │
+│   │   └── utils/                   # Generic helpers
 │   │       ├── file_utils.py
-│   │       ├── logger.py
 │   │       ├── rate_limit.py
 │   │       ├── s3.py
-│   │       └── validators.py
-│   ├── tests/
-│   ├── requirements.txt
-│   └── Dockerfile
+│   │       └── logger.py
+│   │
+│   ├── scripts/                     # DevOps / scheduled tasks
+│   │   ├── backup_faiss.py
+│   │   ├── backup_db.py
+│   │   ├── rebuild_vectorstore.py
+│   │   └── aggregate_usage.py
+│   │
+│   ├── tests/                       # Unit + integration tests
+│   │   └── test_rag.py
+│   │
+│   ├── Dockerfile                   # Backend container
+│   └── requirements.txt             # Python dependencies
 │
-├── infra/
-│   ├── docker-compose.yml
-│   ├── nginx.conf
-│   └── README.md
+├── infra/                           # Deployment & environment configs
+│   ├── docker-compose.yml           # Full stack (backend + redis + postgres)
+│   ├── nginx.conf                   # Reverse proxy rules
+│   └── README.md                    # Infra setup docs
 │
-├── scripts/
-│   ├── backup_faiss.py
-│   ├── backup_db.py
-│   └── rebuild_vectorstore.py
-│
-├── .env.example
-└── README.md
+├── .env.example                     # Env variable template
+└── README.md                        # Main backend documentation
+
 ```
 
 ---

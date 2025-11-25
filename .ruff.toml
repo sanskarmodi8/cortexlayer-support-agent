@@ -1,18 +1,23 @@
-line-length = 100
-target-version = "py311"
+# Ruff Configuration for CortexLayer Backend
 
-# Enable Ruff rule families:
-# I → import sorting
-# D → docstring rules
-# E & F → common Python errors
-extend-select = ["I", "D", "E", "F"]
-
-# Ignore specific rules (safe defaults)
+[lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "B",   # bugbear
+    "D",   # pydocstyle
+    "I",   # isort
+]
 ignore = [
-    "D203",  # Conflicts with Black
-    "D213",  # Conflicts with Black
+    # Ignore missing docstring for __init__.py only
+    "D104"
 ]
 
-[flake8-quotes]
-inline-quotes = "double"
-multiline-quotes = "double"
+[lint.pydocstyle]
+convention = "google"
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"

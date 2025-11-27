@@ -129,7 +129,7 @@ files = {
     "backend/Dockerfile": MODULE_PLACEHOLDER,
     "backend/requirements.txt": MODULE_PLACEHOLDER,
     ".env.example": MODULE_PLACEHOLDER,
-    ".env" : MODULE_PLACEHOLDER,
+    ".env": MODULE_PLACEHOLDER,
     "README.md": MODULE_PLACEHOLDER,
 }
 
@@ -138,7 +138,8 @@ files = {
 
 for d in directories:
     create_dir(d)
-    init_file(os.path.join(d, "__init__.py"))
+    if "docs" not in d:
+        init_file(os.path.join(d, "__init__.py"))
 
 for path, content in files.items():
     create_file(path, content)

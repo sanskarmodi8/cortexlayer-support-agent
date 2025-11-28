@@ -39,6 +39,8 @@ def init_file(path: str):
 # Required directory structure (backend only, NO frontend)
 
 directories = [
+    "backend",
+    "backend/app",
     "backend/app/core",
     "backend/app/models",
     "backend/app/schemas",

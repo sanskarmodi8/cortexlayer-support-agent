@@ -10,7 +10,8 @@ select = [
 ]
 ignore = [
     # Ignore missing docstring for __init__.py only
-    "D104"
+    "D104",
+    "B008",
 ]
 
 [lint.pydocstyle]

@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.core.config import settings
+from backend.app.routes import auth
 from backend.app.utils.logger import logger
 
 # Initialize Sentry
@@ -12,6 +13,8 @@ if settings.SENTRY_DSN:
     sentry_sdk.init(dsn=settings.SENTRY_DSN)
 
 app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG)
+
+app.include_router(auth.router)
 
 # CORS
 app.add_middleware(

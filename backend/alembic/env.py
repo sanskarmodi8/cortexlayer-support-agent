@@ -19,6 +19,8 @@ from backend.app.core.database import Base
 from backend.app.models.client import Client
 from backend.app.models.usage import UsageLog
 from backend.app.models.documents import Document
+from backend.app.models.chat_logs import ChatLog
+from backend.app.models.handoff import HandoffTicket
 
 
 # this is the Alembic Config object, which provides

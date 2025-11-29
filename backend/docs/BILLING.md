@@ -1,298 +1,264 @@
-# **CortexLayer Billing System**
+# 🧾 **CortexLayer Billing System — Source of Truth**
 
-This document defines how billing, usage tracking, plan limits, and overage charging work inside the CortexLayer Support Agent backend.
-This is the **source of truth** for all billing & usage logic.
+This document defines **all billing, usage tracking, cost accounting, and subscription rules** for the CortexLayer Support Agent backend.
+
+Everything related to money, limits, tokens, and cost must match this specification.
 
 ---
 
 # **1. Plan Tiers**
 
-CortexLayer supports three subscription plans:
+| Plan        | Price   | Query Limit | Max Docs | Max File Size | Chunks/Doc | Rate Limit | WhatsApp | Model Priority                 |
+| ----------- | ------- | ----------- | -------- | ------------- | ---------- | ---------- | -------- | ------------------------------ |
+| **Starter** | $79/mo  | 1,000/mo    | 10       | 5MB           | 250        | 15/min     | ❌        | Mixtral-8x7B                   |
+| **Growth**  | $199/mo | 5,000/mo    | 50       | 10MB          | 500        | 50/min     | 2,000    | Mixtral + GPT-4o-mini fallback |
+| **Scale**   | $349/mo | 50,000/mo   | 1000     | 20MB          | 3000       | 100/min    | 10,000   | GPT-4o primary                 |
 
-| Plan        | Monthly | Query Limit | Max Docs | Max File Size | Chunks/Doc | Rate Limit | WhatsApp  | Default Model                        |
-| ----------- | ------- | ----------- | -------- | ------------- | ---------- | ---------- | --------- | ------------------------------------ |
-| **Starter** | $79     | 1,000       | 10       | 5MB           | 250        | 15/min     | ❌         | **Mixtral-8x7B**                     |
-| **Growth**  | $199    | 5,000       | 50       | 10MB          | 500        | 50/min     | 2,000/mo  | **Mixtral + GPT-4o-mini fallback**   |
-| **Scale**   | $349    | 50,000      | 1000     | 20MB          | 3000       | 100/min    | 10,000/mo | **GPT-4o primary, Mixtral fallback** |
+Plans determine:
 
-A plan controls:
-
-* File upload limits
-* Chat request limits
-* WhatsApp usage
+* Allowed number of queries
+* Allowed number of documents
+* File upload size
 * Max chunk count
-* Rate limits
-* Hard & soft caps
-* Model priority
+* Rate limiting
+* Whether WhatsApp automation is enabled
+* Whether fallback models can be used
 
 ---
 
-# **2. Usage Tracking (UsageLog Schema)**
+# **2. Usage Tracking — UsageLog Ledger**
 
-Every billable action creates a record in `usage_logs`.
-This functions as the **financial ledger**.
+Every billable operation creates a row in `usage_logs`.
 
-## **Fields**
+This is the **financial ledger** of CortexLayer.
 
-| Field              | Purpose                                          |
-| ------------------ | ------------------------------------------------ |
-| `id`               | Unique ID of this billing event                  |
-| `client_id`        | Which customer performed the operation           |
-| `operation_type`   | `"query"` / `"embedding"` / `"whatsapp"`         |
-| `input_tokens`     | LLM prompt tokens                                |
-| `output_tokens`    | LLM output tokens                                |
-| `embedding_tokens` | Tokens sent to embedding model                   |
-| `cost_usd`         | Final billed cost (snapshot)                     |
-| `model_used`       | Mixtral / GPT-4o-mini / GPT-4o / embedding model |
-| `latency_ms`       | Time taken                                       |
-| `metadata`         | Arbitrary JSON for tracing/debugging             |
-| `timestamp`        | When the event happened                          |
+### Fields:
 
----
-
-# **3. Cost Model**
-
-## **Embeddings**
-
-```
-$0.02 per 1M tokens
-(text-embedding-3-small)
-```
-
-## **LLM Generation**
-
-| Model        | Input                           | Output     |
-| ------------ | ------------------------------- | ---------- |
-| Mixtral-8x7B | $0.27 / 1M                      | $0.27 / 1M |
-| GPT-4o-mini  | $0.15 / 1M                      | $0.60 / 1M |
-| GPT-4o       | varies (but Scale plan uses it) |            |
-
-## **WhatsApp**
-
-```
-$0.005 per message (inbound/outbound)
-```
+| Field              | Meaning                                       |
+| ------------------ | --------------------------------------------- |
+| `client_id`        | whose usage this belongs to                   |
+| `operation_type`   | `"query"` / `"embedding"` / `"whatsapp"`      |
+| `input_tokens`     | prompt tokens                                 |
+| `output_tokens`    | LLM output tokens                             |
+| `embedding_tokens` | tokens sent to embedding model                |
+| `cost_usd`         | final billed cost snapshot                    |
+| `model_used`       | which model was used                          |
+| `latency_ms`       | execution latency                             |
+| `extra`            | JSON metadata (document_id, chunk_index, etc) |
+| `timestamp`        | when the event happened                       |
 
 ---
 
-# **4. Example Billing Flows**
+# **3. Internal Provider Pricing (Used for Cost Calculation)**
 
-These show exactly what happens in real usage.
+The backend contains this structure:
+
+```python
+PRICING = {
+    "text-embedding-3-small": {"input": 0.02},
+    "mixtral-8x7b": {"input": 0.27, "output": 0.27},
+    "gpt-4o-mini": {"input": 0.15, "output": 0.60},
+    "whatsapp_message": 0.005,
+}
+```
+
+### ❗ IMPORTANT DISTINCTION
+
+### **PRICING = CortexLayer’s internal costs**
+
+Not customer prices.
+Not plan prices.
+Not per-token charges to users.
+
+This dictionary is only for:
+
+* estimating CortexLayer's real expenses
+* calculating overage billing (query overuse)
+* usage analytics
+* profitability measurements
+
+### Customers do **NOT** pay per-token bills.
+
+They pay based on **plans + overage** only.
+
+### Groq free limits do NOT affect pricing
+
+We **do not pass through** provider freebies to end users, to avoid unstable pricing.
 
 ---
 
-## **4.1 Document Upload → Chunking → Embedding Flow**
+# **4. Billing Flow Examples**
 
-When a client uploads `FAQ.pdf` (4.2MB):
+## **4.1 Document Upload → Embedding**
 
-1. PDF is read → text extracted.
-2. Text is chunked (e.g., 38 chunks).
-3. Each chunk is embedded.
+Uploading a PDF:
 
-For each embedding call you create:
+1. PDF processed
+2. Chunked
+3. Each chunk embedded
+4. Each embedding creates a usage log row:
 
 ```
-operation_type = "embedding"
-embedding_tokens = <tokens_for_this_chunk>
+operation_type="embedding"
+embedding_tokens=1530
+model_used="text-embedding-3-small"
 cost_usd = calculate_embedding_cost()
-model_used = "text-embedding-3-small"
-metadata = {
-  "document_id": "doc_abc",
-  "chunk_index": 12,
-  "source": "upload"
-}
+extra={"document_id": "...", "chunk_index": 7}
 ```
-
-**Result:**
-38 rows added to `usage_logs`.
-User is billed for embedding cost.
 
 ---
 
-## **4.2 Normal Query (Web Widget) Flow**
-
-User asks:
-
-> "What is your refund policy?"
-
-Pipeline:
-
-1. Retrieve relevant chunks → free.
-2. Construct prompt (context + question).
-3. LLM responds using the plan model.
-
-We log:
+## **4.2 User Query (Widget / API)**
 
 ```
-operation_type = "query"
-input_tokens = 120
-output_tokens = 480
+operation_type="query"
+input_tokens=120
+output_tokens=480
+model_used="mixtral-8x7b"
 cost_usd = calculate_generation_cost()
-model_used = "mixtral-8x7b"
-latency_ms = 1020
-metadata = {
-  "query_id": "q_981",
-  "retrieved_docs": ["doc_abc#3"]
-}
+extra={"query_id": "..."}
 ```
-
-**Result:**
-1 usage row → billed based on tokens.
 
 ---
 
-## **4.3 WhatsApp Message Flow**
+## **4.3 WhatsApp Message**
 
-Inbound message:
+Two rows:
 
-> "Need to reset password"
-
-If Growth/Scale plan:
-
-1. User message arrives (WhatsApp cost).
-2. LLM generates response (optional).
-3. You send reply back.
-
-We log TWO rows:
-
-### Inbound message:
+### Inbound message fee:
 
 ```
-operation_type = "whatsapp"
-cost_usd = 0.005
-metadata = {"direction": "inbound", "wa_id": "wam_11"}
+operation_type="whatsapp"
+cost_usd=0.005
+extra={"direction": "inbound"}
 ```
 
-### LLM generation (if reply used AI):
+### LLM response:
 
 ```
-operation_type = "query"
-input_tokens = 90
-output_tokens = 150
-model_used = "gpt-4o-mini"
-cost_usd = 0.00030
+operation_type="query"
+input_tokens=80
+output_tokens=145
+model_used="gpt-4o-mini"
 ```
-
-**Result:**
-WhatsApp message fee + AI generation fee.
 
 ---
 
-# **5. Overage Billing Rules**
+# **5. Plan Limits & Enforcement**
 
-Every plan has:
-✔ **Soft Cap (20% extra)**
-✔ **Hard Cap (50% extra)**
+Each plan defines:
 
-Soft cap triggers invoice.
-Hard cap disables the client.
+* Max queries per month
+* Max documents
+* Max chunk count per document
+* Max file upload size
+* WhatsApp allocations
+* Query rate limits
 
-### **Examples:**
+If limits are exceeded → *overage logic triggers*.
 
-Starter:
+---
 
-* Limit = 1000
-* Soft cap = 1200
-* Hard cap = 1500
+# **6. Overage Billing**
 
-Growth:
+Each plan allows:
 
-* Limit = 5000
-* Soft cap = 6000
-* Hard cap = 7500
+* **Soft cap** = plan limit × 1.2
+* **Hard cap** = plan limit × 1.5
 
-Scale:
+Example (Starter):
 
-* Limit = 50000
-* Soft cap = 60000
-* Hard cap = 75000
+* Limit: **1000**
+* Soft cap: **1200**
+* Hard cap: **1500**
 
-### **Overage Formula**
+### **Soft Cap → Overage Invoice**
 
 ```
 overage_queries = used - plan_limit
-cost = overage_queries * $0.01
+overage_cost = overage_queries * $0.01
 ```
 
+We create a Stripe invoice item.
+
+### **Hard Cap → Disable**
+
+* Disable the client
+* Prevent new queries
+* Set billing_status = `"DISABLED"`
+
 ---
 
-# **6. Billing State Machine**
-
-A client can be in:
-
-* **ACTIVE**
-* **GRACE_PERIOD** (payment failed)
-* **DISABLED** (after 7 days of grace)
-* **CANCELLED**
-
-### **Transitions**
+# **7. Billing State Machine**
 
 ```
-invoice.paid               → ACTIVE
-invoice.payment_failed     → GRACE_PERIOD
-7 days in grace            → DISABLED
-subscription.deleted       → CANCELLED
+ACTIVE --(payment failed)--> GRACE_PERIOD
+GRACE_PERIOD --(7 days)--> DISABLED
+DISABLED --(manual admin action)--> ACTIVE
+ACTIVE --(subscription cancelled)--> CANCELLED
 ```
 
----
+Stripe events:
 
-# **7. Stripe Integration Overview**
-
-Stripe handles:
-
-* Creating customers
-* Subscriptions
-* Invoices + payment retries
-* Overage invoice items
-* Webhooks for:
-
-  * invoice.paid
-  * invoice.payment_failed
-  * customer.subscription.deleted
-
-We only do:
-
-✔ Usage tracking
-✔ Cost calculation
-✔ Generating invoice items
-✔ Updating client billing status
+| Stripe Event                    | Behavior               |
+| ------------------------------- | ---------------------- |
+| `invoice.paid`                  | account becomes ACTIVE |
+| `invoice.payment_failed`        | enters GRACE_PERIOD    |
+| `customer.subscription.deleted` | becomes CANCELLED      |
 
 ---
 
-# **8. Required Tables**
+# **8. Stripe Integration Responsibilities**
 
-## **Client Table (subset)**
+Stripe does:
 
-* `id`
-* `plan_type` (Starter/Growth/Scale)
-* `billing_status`
-* `stripe_customer_id`
-* `is_disabled`
+* Customer creation
+* Subscription lifecycle
+* Automatic billing
+* Payment retries
+* Webhooks
+* Invoices
 
-## **UsageLog Table**
+CortexLayer does:
 
-Full ledger of all billable operations (see section 2).
-
-## **Document Table**
-
-Used for enforcing:
-
-* document count limit
-* file size limit
-* chunk count limit
+* Logging usage
+* Calculating cost
+* Enforcing limits
+* Generating overage invoice items
+* Updating client billing status
 
 ---
 
-# **9. Summary**
+# **9. Required Database Tables**
 
-This billing system ensures:
+### **Client**
 
-* Full transparency of cost per operation
-* Complete ledger for auditing
-* Accurate monthly billing via Stripe
-* Automatic enforcement of plan limits
-* Auto-disable on abuse or non-payment
-* Clear financial metrics per client
-* Safe cost boundaries for your startup
+* plan_type
+* billing_status
+* stripe_customer_id
+* is_disabled
 
-This document governs **all cost, usage, and billing behavior** in CortexLayer.
+### **UsageLog**
+
+* full ledger of all operations
+
+### **Document**
+
+* used for enforcing upload limits
+
+---
+
+# **10. Summary**
+
+The CortexLayer billing engine ensures:
+
+* Predictable customer billing (plan-based)
+* Accurate overage billing
+* Full internal cost tracking
+* Auditable usage logs
+* Automatic disabling on abuse
+* Stripe-backed reliability
+* Support for WhatsApp usage
+* Clear financial analytics
+
+This document is the **authoritative blueprint** for billing across the platform.

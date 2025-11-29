@@ -1,19 +1,16 @@
-"""Test settings used during pytest runs.
-
-Provides dummy environment values so no real API keys or secrets
-are required while running tests.
-"""
+"""Test settings used during pytest to avoid loading real environment variables."""
 
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    """Mocked settings for local test execution."""
+    """Lightweight settings for tests, replacing production secrets."""
 
     DEBUG: bool = True
+
     DATABASE_URL: str = "sqlite:///./test.db"
     REDIS_URL: str = "redis://localhost:6379/0"
-    JWT_SECRET: str = "test"
+    JWT_SECRET: str = "test-secret"
 
     OPENAI_API_KEY: str = "test"
     GROQ_API_KEY: str = "test"

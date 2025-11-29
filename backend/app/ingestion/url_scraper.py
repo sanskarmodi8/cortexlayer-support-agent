@@ -1,4 +1,4 @@
-"""URL scraper module providing async and sync web scraping utilities."""
+"""URL Scraper module providing async and sync scraping utilities."""
 
 from typing import Dict, Tuple
 
@@ -9,82 +9,71 @@ import trafilatura
 from backend.app.utils.logger import logger
 
 
-def scrape_url_sync(url: str, timeout: int = 30) -> Tuple[str, Dict]:
-    """Scrape a URL synchronously using `requests`.
+# -----------------------------
+# Custom Exceptions
+# -----------------------------
+class URLFetchError(Exception):
+    """Raised when fetching the URL fails."""
 
-    Args:
-        url: URL to fetch.
-        timeout: Timeout duration.
+
+class URLExtractionError(Exception):
+    """Raised when trafilatura fails to extract content."""
+
+
+# -----------------------------
+# SYNC SCRAPER
+# -----------------------------
+def scrape_url_sync(url: str, timeout: int = 30) -> Tuple[str, Dict]:
+    """Synchronous URL scraping using requests.
 
     Returns:
-        A tuple containing:
-            - extracted text (str)
-            - metadata (dict)
+        (text, metadata) tuple.
 
     Raises:
-        Exception: If fetching or extraction fails.
+        URLFetchError, URLExtractionError
     """
     try:
         response = requests.get(url, timeout=timeout)
         response.raise_for_status()
         html = response.text
-    except Exception as err:  # noqa: BLE001
-        raise Exception(f"Failed to fetch URL: {err}") from err
+    except Exception as exc:  # noqa: BLE001
+        logger.error(f"Sync fetch failed: {exc}")
+        raise URLFetchError(f"Failed to fetch URL: {url}") from exc
 
-    text = trafilatura.extract(
-        html,
-        include_comments=False,
-        include_tables=True,
-        no_fallback=False,
-    )
+    text = trafilatura.extract(html, include_comments=False, include_tables=True)
 
     if not text:
-        raise Exception("No content extracted from URL")
+        raise URLExtractionError("No extractable text found")
 
     metadata = {"url": url}
-
-    logger.info("Sync scraping completed successfully.")
     return text.strip(), metadata
 
 
+# -----------------------------
+# ASYNC SCRAPER
+# -----------------------------
 async def scrape_url(url: str, timeout: int = 30) -> Tuple[str, Dict]:
-    """Scrape a URL asynchronously using httpx.
-
-    Args:
-        url: URL to fetch.
-        timeout: Timeout duration.
+    """Asynchronous URL scraping using httpx.AsyncClient.
 
     Returns:
-        A tuple containing:
-            - extracted text (str)
-            - metadata (dict)
+        (text, metadata)
 
     Raises:
-        Exception: If fetching or extraction fails.
+        URLFetchError, URLExtractionError
     """
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(
-                url,
-                timeout=timeout,
-                follow_redirects=True,
-            )
+            response = await client.get(url, timeout=timeout, follow_redirects=True)
             response.raise_for_status()
             html = response.text
-    except Exception as err:  # noqa: BLE001
-        raise Exception(f"Failed to fetch URL: {err}") from err
+    except Exception as exc:  # noqa: BLE001
+        logger.error(f"Async fetch failed: {exc}")
+        raise URLFetchError(f"Failed to fetch URL: {url}") from exc
 
-    text = trafilatura.extract(
-        html,
-        include_comments=False,
-        include_tables=True,
-        no_fallback=False,
-    )
+    text = trafilatura.extract(html, include_comments=False, include_tables=True)
 
     if not text:
-        raise Exception("No content extracted from URL")
+        raise URLExtractionError("No extractable text found")
 
     metadata = {"url": url}
-
-    logger.info("Async scraping completed successfully.")
     return text.strip(), metadata

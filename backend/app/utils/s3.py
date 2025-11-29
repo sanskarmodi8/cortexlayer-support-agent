@@ -1,9 +1,14 @@
-"""S3 utility functions for uploading, downloading, deleting files."""
+"""S3 utility functions with test-settings fallback."""
 
 import boto3
 from botocore.exceptions import ClientError
 
-from backend.app.core.config import settings
+# Try real settings, fallback to test settings (just like logger.py)
+try:
+    from backend.app.core.config import settings
+except Exception:
+    from backend.app.core.test_settings import settings
+
 from backend.app.utils.logger import logger
 
 # Initialize S3 client (DigitalOcean Spaces compatible)
@@ -26,8 +31,8 @@ def upload_file(file_data: bytes, key: str) -> bool:
         )
         logger.info(f"Uploaded to S3: {key}")
         return True
-    except ClientError as e:
-        logger.error(f"S3 upload failed: {e}")
+    except ClientError as err:  # noqa: BLE001
+        logger.error(f"S3 upload failed: {err}")
         return False
 
 
@@ -39,8 +44,8 @@ def download_file(key: str) -> bytes:
             Key=key,
         )
         return response["Body"].read()
-    except ClientError as e:
-        logger.error(f"S3 download failed: {e}")
+    except ClientError as err:  # noqa: BLE001
+        logger.error(f"S3 download failed: {err}")
         raise
 
 
@@ -51,8 +56,7 @@ def delete_file(key: str) -> bool:
             Bucket=settings.DO_SPACES_BUCKET,
             Key=key,
         )
-        logger.info(f"Deleted from S3: {key}")
         return True
-    except ClientError as e:
-        logger.error(f"S3 delete failed: {e}")
+    except ClientError as err:  # noqa: BLE001
+        logger.error(f"S3 delete failed: {err}")
         return False

@@ -18,6 +18,7 @@ from backend.app.core.database import Base
 # Import all models so Alembic can detect them
 from backend.app.models.client import Client
 from backend.app.models.usage import UsageLog
+from backend.app.models.documents import Document
 
 
 # this is the Alembic Config object, which provides

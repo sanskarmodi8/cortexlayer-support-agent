@@ -1,3 +1,4 @@
+
 # Core Server Framework
 fastapi==0.110.0
 uvicorn[standard]==0.29.0
@@ -7,7 +8,7 @@ SQLAlchemy==2.0.29
 psycopg2-binary==2.9.9
 alembic==1.13.1
 
-# Redis (rate limiting, caching)
+# Redis (Caching / Rate Limits)
 redis==5.0.1
 
 # RAG / Vector Search
@@ -16,7 +17,6 @@ langchain==0.1.16
 langchain-community==0.0.33
 langchain-openai==0.0.8
 
-
 # Tokenization
 tiktoken==0.6.0
 
@@ -24,7 +24,7 @@ tiktoken==0.6.0
 openai==1.16.1
 groq==0.36.0
 
-# Storage (S3-compatible: DO Spaces)
+# Storage (S3 / DO Spaces)
 boto3==1.34.79
 botocore==1.34.79
 
@@ -47,7 +47,7 @@ pyjwt==2.8.0
 # Stripe Billing
 stripe==10.11.0
 
-# Email Services
+# Email / Templates
 sendgrid==6.11.0
 jinja2==3.1.3
 
@@ -56,18 +56,24 @@ sentry-sdk==1.42.0
 structlog==24.1.0
 python-json-logger==2.0.7
 
-# Utils
+# Utils / Settings / Serialization
 orjson==3.10.7
 pydantic==2.6.4
 pydantic-settings==2.2.1
 python-dotenv==1.0.1
 
-# Testing
+# Testing Dependencies
 pytest==8.1.1
 pytest-asyncio==0.23.5
+pytest-mock==3.12.0
 pytest-cov==4.1.0
+sqlalchemy-utils==0.41.2
+pytest-postgresql==7.0.2
 
-# Developer Tools (Linting, Formatting)
+# For FastAPI route testing
+httpx==0.27.0
+
+# Developer Tools (Formatting / Linting / Hooks)
 black==24.3.0
 ruff==0.3.5
 pre-commit==3.7.0

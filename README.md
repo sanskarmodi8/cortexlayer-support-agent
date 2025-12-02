@@ -47,7 +47,7 @@ This backend provides:
 * Basic analytics
 * Email fallback
 * Model: **Mixtral-8x7B (Groq)**
-* Setup: **$399**, Monthly: **$79**
+* Setup: **$299**, Monthly: **$99**
 
 **Backend enforces:**
 
@@ -68,7 +68,7 @@ Everything in Starter, plus:
 * Advanced analytics (latency, relevance, top queries)
 * **Human handoff inbox**
 * Model fallback: GPT-4o-mini
-* Setup: **$899**, Monthly: **$199**
+* Setup: **$499**, Monthly: **$219**
 
 **Backend enforces:**
 
@@ -87,7 +87,7 @@ Everything in Growth, plus:
 * High-volume ingestion
 * Per-client API keys
 * Priority models: GPT-4o
-* Setup: **$1,499**, Monthly: **$349**
+* Setup: **$799**, Monthly: **$399**
 
 **Backend enforces:**
 
@@ -387,3 +387,4 @@ Backend ensures no plan abuse or cost leaks.
 * Structured logging
 * Daily DB + FAISS snapshots
 * Stripe webhook logs
+

@@ -1,7 +1,5 @@
 # 🧾 **CortexLayer Billing System — Source of Truth**
 
-*Accurate as of Day 4 — Includes all backend models & logic.*
-
 This document defines **every rule** governing:
 
 * plan limits
@@ -13,17 +11,29 @@ This document defines **every rule** governing:
 * Stripe integration
 * billing state machine
 
-If backend code and this document ever diverge → backend must be updated.
-
 ---
 
-# **1. Subscription Plans**
+# 1. Subscription Plans
 
-| Plan        | Price   | Query Limit | Max Docs | File Size (MB) | Chunks/Doc | Rate Limit | WhatsApp  | Default Model                  |
-| ----------- | ------- | ----------- | -------- | -------------- | ---------- | ---------- | --------- | ------------------------------ |
-| **Starter** | $79/mo  | 1,000/mo    | 10       | 5MB            | 250        | 15/min     | ❌         | Mixtral-8x7B                   |
-| **Growth**  | $199/mo | 5,000/mo    | 50       | 10MB           | 500        | 50/min     | 2,000/mo  | Mixtral + GPT-4o-mini fallback |
-| **Scale**   | $349/mo | 50,000/mo   | 1000     | 20MB           | 3000       | 100/min    | 10,000/mo | GPT-4o primary                 |
+| Plan        | Price     | Query Limit | Max Docs | File Size | Chunks/Doc | Rate Limit | WhatsApp Limit | Default Model |
+|-------------|-----------|-------------|----------|-----------|------------|------------|----------------|----------------|
+| **Starter** | $99/mo    | 1,000/mo    | 10       | 5MB       | 250        | 15/min     | ❌              | Mixtral-8x7B   |
+| **Growth**  | $219/mo   | 5,000/mo    | 50       | 10MB      | 500        | 50/min     | 2,000/mo       | Mixtral + GPT-4o-mini |
+| **Scale**   | $399/mo   | 50,000/mo   | 1000     | 20MB      | 3000       | 100/min    | 10,000/mo      | GPT-4o primary |
+
+### Setup Fees
+
+| Service | Tier | Setup Fee |
+|--------|------|-----------|
+| Support Bot | Starter | $299 |
+| Support Bot | Growth | $499 |
+| Support Bot | Scale | $799 |
+| Lead Agent | Starter | $499 |
+| Lead Agent | Pro | $999 |
+| Lead Agent | Enterprise | $1,999 |
+| Product Tagging | Small | $999 |
+| Product Tagging | Growth | $1,499 |
+| Product Tagging | Enterprise | $3,000+ |
 
 Plans determine:
 
@@ -351,3 +361,4 @@ The CortexLayer Billing System provides:
 ✔ full analytics foundation
 
 This document is the **authoritative reference** for all billing and usage logic.
+

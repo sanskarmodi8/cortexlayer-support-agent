@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.core.config import settings
-from backend.app.routes import auth
+from backend.app.routes import admin, auth
 from backend.app.routes.webhook import router as webhook_router
 from backend.app.utils.logger import logger
 from backend.app.utils.redis_client import test_redis_connection
@@ -17,6 +17,7 @@ if settings.SENTRY_DSN:
 app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG)
 
 app.include_router(auth.router)
+app.include_router(admin.router)
 app.include_router(webhook_router)
 
 # CORS

@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.core.config import settings
+from backend.app.middleware.logging import log_requests
 from backend.app.routes import admin, auth
 from backend.app.routes.webhook import router as webhook_router
 from backend.app.utils.logger import logger
@@ -15,6 +16,8 @@ if settings.SENTRY_DSN:
     sentry_sdk.init(dsn=settings.SENTRY_DSN)
 
 app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG)
+
+app.middleware("http")(log_requests)
 
 app.include_router(auth.router)
 app.include_router(admin.router)

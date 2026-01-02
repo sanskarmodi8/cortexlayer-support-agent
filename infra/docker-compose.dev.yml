@@ -23,15 +23,18 @@ services:
 
   backend:
     build:
-      context: ../backend
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: backend/Dockerfile
     container_name: cortexlayer_backend
     restart: unless-stopped
+    env_file:
+      - ../.env
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cortexlayer
       REDIS_URL: redis://redis:6379/0
     volumes:
-      - ../backend:/app
+      - ../backend:/app/backend
+    working_dir: /app
     ports:
       - "8000:8000"
     depends_on:

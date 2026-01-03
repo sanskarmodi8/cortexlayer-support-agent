@@ -138,3 +138,9 @@ Backup script:
 backend/scripts/backup_db.sh
 
 ```
+
+---
+
+## Architecture
+
+Client → Cloudflare → Nginx → FastAPI

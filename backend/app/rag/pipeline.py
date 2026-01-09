@@ -48,6 +48,7 @@ async def run_rag_pipeline(
     except Exception as e:
         logger.error(f"Generation failed: {e}")
         answer = "I'm sorry, I'm experiencing technical issues."
+
         usage_stats = {
             "model_used": "none",
             "input_tokens": 0,

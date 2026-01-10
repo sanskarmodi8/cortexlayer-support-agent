@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     # AI APIs and models
     OPENAI_API_KEY: str
     GROQ_API_KEY: str
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
     HF_EBD_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
     OPENAI_EBD_MODEL: str = "text-embedding-3-small"
 

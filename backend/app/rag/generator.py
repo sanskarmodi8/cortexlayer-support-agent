@@ -15,7 +15,7 @@ openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 def _call_groq(prompt: str, max_tokens: int):
     return groq_client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model=settings.GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=max_tokens,
         temperature=0.3,
@@ -24,7 +24,7 @@ def _call_groq(prompt: str, max_tokens: int):
 
 def _call_openai(prompt: str, max_tokens: int):
     return openai_client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=settings.OPENAI_MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=max_tokens,
         temperature=0.3,
@@ -49,7 +49,7 @@ async def generate_answer(
             response = await asyncio.to_thread(_call_groq, prompt, max_tokens)
 
             answer = response.choices[0].message.content
-            usage_stats["model_used"] = "llama-3.3-70b"
+            usage_stats["model_used"] = settings.GROQ_MODEL
             usage_stats["input_tokens"] = response.usage.prompt_tokens
             usage_stats["output_tokens"] = response.usage.completion_tokens
 
@@ -69,7 +69,7 @@ async def generate_answer(
         response = await asyncio.to_thread(_call_openai, prompt, max_tokens)
 
         answer = response.choices[0].message.content
-        usage_stats["model_used"] = "gpt-4o-mini"
+        usage_stats["model_used"] = settings.OPENAI_MODEL
         usage_stats["input_tokens"] = response.usage.prompt_tokens
         usage_stats["output_tokens"] = response.usage.completion_tokens
 

@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple
 from openai import OpenAI
 
 from backend.app.core.config import settings
+from backend.app.ingestion.embedder_hf import get_embeddings as ge
 from backend.app.utils.logger import logger
 
 # Initialize OpenAI client once
@@ -16,12 +17,12 @@ async def get_embeddings(
 ) -> Tuple[List[List[float]], Dict]:
     """
     Generate embeddings.
-    Falls back to deterministic stub vectors if external APIs fail.
+    Falls back to HF embeddings.
     """
 
     try:
         response = openai_client.embeddings.create(
-            model="text-embedding-3-small",
+            model=settings.OPENAI_EBD_MODEL,
             input=texts
         )
 
@@ -31,7 +32,7 @@ async def get_embeddings(
         cost = (total_tokens / 1_000_000) * 0.02
 
         logger.info(
-            f"✅ OpenAI embeddings generated: {len(embeddings)} | "
+            f"OpenAI embeddings generated: {len(embeddings)} | "
             f"Tokens: {total_tokens} | Cost: ${cost:.6f}"
         )
 
@@ -42,21 +43,18 @@ async def get_embeddings(
         }
 
     except Exception as e:
-        # 🔥 DEV-SAFE FALLBACK
         logger.error(
-            "❌ Embedding API unavailable. "
-            "Using stub embeddings for development only."
+            "OpenAI Embedding API unavailable. "
+            "Using HF embeddings temporarily."
         )
         logger.error(str(e))
 
-        # Deterministic fake vectors (FAISS-compatible)
-        fake_embedding = [0.0] * 1536
-        embeddings = [fake_embedding for _ in texts]
+        embeddings, _, tokens = ge(texts)
 
         return embeddings, {
-            "tokens": 0,
+            "tokens": tokens,
             "cost_usd": 0.0,
-            "model": "stub-dev"
+            "model": settings.HF_EBD_MODEL
         }
 
 
@@ -97,7 +95,7 @@ async def embed_and_index(
     )
 
     logger.info(
-        f"📦 Indexed {len(embeddings)} chunks "
+        f"Indexed {len(embeddings)} chunks "
         f"client={client_id} document={document_id}"
     )
 

@@ -17,7 +17,6 @@ from backend.app.models.client import Client
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Token extractor (reads Authorization: Bearer <token>)
-# auto_error=False means it won't automatically raise 403, we handle it manually
 security = HTTPBearer(auto_error=False)
 
 
@@ -68,13 +67,10 @@ async def get_current_client(
     db: Annotated[Session, Depends(get_db)],
 ) -> Client:
     """Return currently authenticated client from DB."""
-    # Check if Authorization header is missing
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authenticated - missing Authorization header",
         )
-
     token = credentials.credentials
     payload = decode_token(token)
     client_id = payload.get("sub")

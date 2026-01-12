@@ -3,10 +3,11 @@
 import json
 from unittest.mock import MagicMock
 
+import pytest
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
-import pytest
+
 pytestmark = pytest.mark.integration
 
 
@@ -36,7 +37,8 @@ def test_webhook_invoice_paid(monkeypatch, db) -> None:
     mock_construct.return_value = event
 
     monkeypatch.setattr(
-        ("backend.app.routes.webhook.stripe.Webhook.construct_event"), (mock_construct)
+        "backend.app.routes.webhook.stripe.Webhook.construct_event",
+        mock_construct,
     )
 
     client_api = TestClient(app)

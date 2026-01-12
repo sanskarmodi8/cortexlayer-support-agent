@@ -57,6 +57,24 @@ async def get_embeddings(
             "model": settings.HF_EBD_MODEL
         }
 
+async def embed_chunks(chunks: List[Dict]) -> Tuple[List[Dict], Dict]:
+    """
+    Attach embeddings directly to chunks.
+    Kept as a thin public helper for tests and legacy compatibility.
+    """
+
+    if not chunks:
+        return [], {"tokens": 0, "cost_usd": 0.0}
+
+    texts = [chunk["text"] for chunk in chunks]
+
+    embeddings, usage_stats = await get_embeddings(texts)
+
+    for idx, chunk in enumerate(chunks):
+        chunk["embedding"] = embeddings[idx]
+        chunk["embedding_model"] = usage_stats.get("model", "unknown")
+
+    return chunks, usage_stats
 
 
 async def embed_and_index(

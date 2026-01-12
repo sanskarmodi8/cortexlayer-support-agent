@@ -25,9 +25,12 @@ async def retrieve_relevant_chunks(
         return []
 
     # Step 1: Embed the query
-    embeddings, _ = await get_embeddings(
-        texts=[query]
-    )
+    try:
+        embeddings, _ = await get_embeddings(texts=[query])
+    except Exception as e:
+        logger.error(f"Embedding failed in retriever: {e}")
+        return []
+
     query_embedding = embeddings[0]
 
     # Step 2: Search FAISS index

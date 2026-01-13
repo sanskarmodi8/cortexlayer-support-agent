@@ -19,6 +19,21 @@ async def run_rag_pipeline(
     top_k: int = 5,
 ) -> Dict:
     """Run the complete RAG pipeline."""
+    if not query or not query.strip():
+        logger.warning("Empty query received for RAG pipeline")
+        return {
+            "answer": "Please provide a valid question.",
+            "citations": [],
+            "confidence": 0.0,
+            "latency_ms": 0,
+            "usage_stats": {
+                "model_used": "none",
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cost_usd": 0.0,
+            },
+        }
+
     start_time = time.time()
 
     try:
@@ -48,7 +63,6 @@ async def run_rag_pipeline(
     except Exception as e:
         logger.error(f"Generation failed: {e}")
         answer = "I'm sorry, I'm experiencing technical issues."
-
         usage_stats = {
             "model_used": "none",
             "input_tokens": 0,

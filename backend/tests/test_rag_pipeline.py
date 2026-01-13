@@ -82,3 +82,51 @@ async def test_pipeline_no_context(monkeypatch) -> None:
 
     assert result["confidence"] == 0.0
     assert result["citations"] == []
+
+
+@pytest.mark.asyncio
+async def test_pipeline_retrieval_failure(monkeypatch) -> None:
+    """Ensure pipeline falls back correctly when retrieval fails."""
+
+    async def fake_retrieve(*args, **kwargs):
+        raise Exception("Vector DB down")
+
+    async def fake_generate(prompt, model_preference):
+        return (
+            "I don't have information about that.",
+            {
+                "model_used": "fake",
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cost_usd": 0.0,
+            },
+        )
+
+    monkeypatch.setattr(
+        "backend.app.rag.pipeline.retrieve_relevant_chunks",
+        fake_retrieve,
+    )
+    monkeypatch.setattr(
+        "backend.app.rag.pipeline.generate_answer",
+        fake_generate,
+    )
+
+    result = await run_rag_pipeline(
+        client_id="test-client",
+        query="Test query",
+    )
+
+    assert result["confidence"] == 0.0
+    assert result["citations"] == []
+
+
+@pytest.mark.asyncio
+async def test_pipeline_empty_query() -> None:
+    """Ensure pipeline handles empty queries gracefully."""
+    result = await run_rag_pipeline(
+        client_id="test-client",
+        query="   ",
+    )
+
+    assert result["confidence"] == 0.0
+    assert "valid question" in result["answer"].lower()

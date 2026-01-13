@@ -6,7 +6,7 @@ from backend.app.services.handoff_service import create_handoff_ticket
 
 
 def test_create_handoff_ticket(db):
-    # 1️⃣ Create real client
+    # Create a real client
     client = Client(
         id=uuid.uuid4(),
         email="handoff@test.com",
@@ -17,7 +17,7 @@ def test_create_handoff_ticket(db):
     db.commit()
     db.refresh(client)
 
-    # 2️⃣ Create handoff ticket
+    # Create handoff ticket
     ticket = create_handoff_ticket(
         client_id=client.id,
         query="What is quantum gravity?",
@@ -25,8 +25,7 @@ def test_create_handoff_ticket(db):
         db=db
     )
 
-    # 3️⃣ Hard assertions (persistence + correctness)
-    assert ticket.id is not None
+    # Assertions
     assert ticket.client_id == client.id
 
     assert ticket.query_text == "What is quantum gravity?"

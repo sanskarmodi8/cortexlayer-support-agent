@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from backend.app.core.database import get_db
 from backend.app.models.client import Client
+from backend.app.dependencies.admin_auth import require_admin
 from backend.app.schemas.client import ClientResponse
 from backend.app.services.analytics import (
     get_cost_analytics,
@@ -20,8 +21,14 @@ from backend.app.services.analytics import (
     get_usage_summary,
 )
 
-router = APIRouter(prefix="/admin", tags=["Admin"])
 
+from typing import Optional, List
+from datetime import datetime
+
+
+from backend.app.models.handoff import HandoffTicket, HandoffStatus
+
+router = APIRouter(prefix="/admin", tags=["Admin"])
 
 # Client Management
 
@@ -148,3 +155,46 @@ def get_client_dashboard(
             db=db,
         ),
     }
+
+@router.get("/handoff/list")
+def list_handoff_tickets(
+    status: Optional[HandoffStatus] = None,
+    db: Session = Depends(get_db),
+):
+    """
+    List all handoff tickets.
+    Optional filter by status.
+    """
+    query = db.query(HandoffTicket)
+
+    if status:
+        query = query.filter(HandoffTicket.status == status)
+
+    tickets = query.order_by(HandoffTicket.created_at.desc()).all()
+
+    return {"tickets": tickets}
+
+@router.post("/handoff/{ticket_id}/resolve")
+def resolve_handoff_ticket(
+    ticket_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """
+    Resolve a handoff ticket.
+    """
+    ticket = db.query(HandoffTicket).filter(
+        HandoffTicket.id == ticket_id
+    ).first()
+
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    ticket.status = HandoffStatus.RESOLVED
+    ticket.resolved_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(ticket)
+
+    return {"message": "Ticket resolved", "ticket_id": ticket.id}
+
+

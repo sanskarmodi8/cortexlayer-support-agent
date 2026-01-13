@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from backend.app.core.database import get_db
 from backend.app.models.client import Client
+from backend.app.dependencies.admin_auth import require_admin
 from backend.app.schemas.client import ClientResponse
 from backend.app.services.analytics import (
     get_cost_analytics,
@@ -195,3 +196,5 @@ def resolve_handoff_ticket(
     db.refresh(ticket)
 
     return {"message": "Ticket resolved", "ticket_id": ticket.id}
+
+

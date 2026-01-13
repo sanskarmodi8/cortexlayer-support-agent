@@ -1,5 +1,4 @@
 import uuid
-
 from backend.app.models.client import Client
 from backend.app.models.handoff import HandoffStatus
 from backend.app.services.handoff_service import create_handoff_ticket
@@ -7,7 +6,6 @@ from backend.app.services.handoff_service import create_handoff_ticket
 
 def test_list_handoff_tickets(client, db):
     response = client.get("/admin/handoff/list")
-
     assert response.status_code == 200
     assert "tickets" in response.json()
 
@@ -31,9 +29,8 @@ def test_resolve_handoff_ticket(client, db):
         db=db,
     )
 
-    # Resolve ticket
+    # Resolve
     response = client.post(f"/admin/handoff/{ticket.id}/resolve")
-
     assert response.status_code == 200
 
     db.refresh(ticket)

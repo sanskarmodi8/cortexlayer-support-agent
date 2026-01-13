@@ -27,16 +27,16 @@ def backup_all_indexes():
         clients = db.query(Client).filter(Client.is_active == True).all()
 
         if not clients:
-            logger.info("⚠️ No active clients found — nothing to back up")
+            logger.info("No active clients found — nothing to back up")
             return
 
         for client in clients:
             try:
                 index, metadata = load_index(str(client.id))
                 save_index(str(client.id), index, metadata)
-                logger.info(f"✅ Backed up index for {client.email}")
+                logger.info(f"Backed up index for {client.email}")
             except Exception as e:
-                logger.error(f"❌ Backup failed for {client.email}: {e}")
+                logger.error(f"Backup failed for {client.email}: {e}")
 
     finally:
         db.close()

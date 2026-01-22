@@ -62,7 +62,7 @@ def add_to_index(
         raise ValueError(f"Index dim mismatch: index={index.d}, vector_dim={shape}")
 
     index.add(vectors)
-    all_metadata = existing_meta + metadata_list
+    save_index(client_id, index, existing_meta + metadata_list)
 
     save_index(client_id, index, all_metadata)
 
@@ -81,6 +81,8 @@ def save_index(
     """Save index locally and upload to S3."""
     index_path = _get_index_path(client_id)
     meta_path = _get_metadata_path(client_id)
+
+    Path(index_path).parent.mkdir(parents=True, exist_ok=True)
 
     faiss.write_index(index, index_path)
 

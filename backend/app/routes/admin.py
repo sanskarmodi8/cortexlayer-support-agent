@@ -1,18 +1,17 @@
-"""Admin-facing API routes.
+"""Admin-facing API routes."""
 
-These endpoints provide read-only access to client data and
-aggregated usage, cost, and performance analytics for
-administrative and operational purposes.
-"""
-
+from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from backend.app.core.database import get_db
+from backend.app.models.chat_logs import ChatLog
 from backend.app.models.client import Client
-from backend.app.dependencies.admin_auth import require_admin
+from backend.app.models.handoff import HandoffStatus, HandoffTicket
 from backend.app.schemas.client import ClientResponse
 from backend.app.services.analytics import (
     get_cost_analytics,
@@ -21,21 +20,12 @@ from backend.app.services.analytics import (
     get_usage_summary,
 )
 
-
-from typing import Optional, List
-from datetime import datetime
-
-
-from backend.app.models.handoff import HandoffTicket, HandoffStatus
-
 router = APIRouter(prefix="/admin", tags=["Admin"])
-
-# Client Management
 
 
 @router.get("/clients", response_model=list[ClientResponse])
 def list_clients(db: Session = Depends(get_db)):
-    """Return a list of all registered clients."""
+    """List all clients."""
     return (
         db.query(Client)
         .options(
@@ -48,16 +38,11 @@ def list_clients(db: Session = Depends(get_db)):
 
 @router.get("/clients/{client_id}", response_model=ClientResponse)
 def get_client(client_id: UUID, db: Session = Depends(get_db)):
-    """Retrieve a single client by its unique identifier."""
+    """Get client details."""
     client = db.query(Client).filter(Client.id == client_id).first()
-
-    if client is None:
+    if not client:
         raise HTTPException(status_code=404, detail="Client not found")
-
     return client
-
-
-# Analytics Endpoints
 
 
 @router.get("/analytics/usage/{client_id}")
@@ -66,12 +51,8 @@ def get_client_usage_analytics(
     days: int = 30,
     db: Session = Depends(get_db),
 ):
-    """Return aggregated usage analytics for a client."""
-    return get_usage_summary(
-        client_id=str(client_id),
-        db=db,
-        days=days,
-    )
+    """Get client usage analytics."""
+    return get_usage_summary(str(client_id), db, days)
 
 
 @router.get("/analytics/cost/{client_id}")
@@ -80,17 +61,8 @@ def get_client_cost_analytics(
     days: int = 30,
     db: Session = Depends(get_db),
 ):
-    """Return cost analytics for a client.
-
-    Includes:
-    - Daily cost trend
-    - Cost grouped by model
-    """
-    return get_cost_analytics(
-        client_id=str(client_id),
-        db=db,
-        days=days,
-    )
+    """Get client cost analytics."""
+    return get_cost_analytics(str(client_id), db, days)
 
 
 @router.get("/analytics/query/{client_id}")
@@ -98,16 +70,8 @@ def get_client_query_analytics(
     client_id: UUID,
     db: Session = Depends(get_db),
 ):
-    """Return query performance analytics for a client.
-
-    Includes:
-    - Average latency
-    - Average confidence score
-    """
-    return get_query_analytics(
-        client_id=str(client_id),
-        db=db,
-    )
+    """Get client query analytics."""
+    return get_query_analytics(str(client_id), db)
 
 
 @router.get("/analytics/documents/{client_id}")
@@ -115,11 +79,8 @@ def get_client_document_analytics(
     client_id: UUID,
     db: Session = Depends(get_db),
 ):
-    """Return document analytics for a client."""
-    return get_document_analytics(
-        client_id=str(client_id),
-        db=db,
-    )
+    """Get client document analytics."""
+    return get_document_analytics(str(client_id), db)
 
 
 @router.get("/dashboard/{client_id}")
@@ -128,63 +89,115 @@ def get_client_dashboard(
     days: int = 30,
     db: Session = Depends(get_db),
 ):
-    """Unified admin dashboard endpoint.
+    """Get client dashboard analytics."""
+    cid = str(client_id)
+    return {
+        "usage": get_usage_summary(cid, db, days),
+        "costs": get_cost_analytics(cid, db, days),
+        "documents": get_document_analytics(cid, db),
+        "queries": get_query_analytics(cid, db),
+    }
 
-    Returns usage, cost, document, and query analytics
-    for a single client in one response.
-    """
-    client_id_str = str(client_id)
+
+@router.get("/analytics/whatsapp/messages")
+def whatsapp_message_analytics(db: Session = Depends(get_db)):
+    """Get WhatsApp message analytics."""
+    total = db.query(ChatLog).filter(ChatLog.channel == "whatsapp").count()
+
+    per_client = (
+        db.query(
+            Client.company_name,
+            func.count(ChatLog.id),
+        )
+        .join(ChatLog, ChatLog.client_id == Client.id)
+        .filter(ChatLog.channel == "whatsapp")
+        .group_by(Client.company_name)
+        .order_by(func.count(ChatLog.id).desc())
+        .all()
+    )
 
     return {
-        "usage": get_usage_summary(
-            client_id=client_id_str,
-            db=db,
-            days=days,
-        ),
-        "costs": get_cost_analytics(
-            client_id=client_id_str,
-            db=db,
-            days=days,
-        ),
-        "documents": get_document_analytics(
-            client_id=client_id_str,
-            db=db,
-        ),
-        "queries": get_query_analytics(
-            client_id=client_id_str,
-            db=db,
-        ),
+        "total_messages": total,
+        "messages_per_client": [
+            {"company": name, "message_count": count} for name, count in per_client
+        ],
     }
+
+
+@router.get("/analytics/whatsapp/performance")
+def whatsapp_performance_analytics(db: Session = Depends(get_db)):
+    """Get WhatsApp performance analytics."""
+    avg_lat, min_lat, max_lat = (
+        db.query(
+            func.avg(ChatLog.latency_ms),
+            func.min(ChatLog.latency_ms),
+            func.max(ChatLog.latency_ms),
+        )
+        .filter(ChatLog.channel == "whatsapp")
+        .first()
+    )
+
+    return {
+        "average_latency_ms": int(avg_lat) if avg_lat else 0,
+        "min_latency_ms": min_lat or 0,
+        "max_latency_ms": max_lat or 0,
+    }
+
+
+@router.get("/analytics/whatsapp/activity")
+def whatsapp_activity_analytics(db: Session = Depends(get_db)):
+    """Get WhatsApp activity analytics."""
+    dialect = db.bind.dialect.name
+
+    if dialect == "sqlite":
+        hour_expr = func.strftime("%H", ChatLog.timestamp)
+    else:
+        hour_expr = func.extract("hour", ChatLog.timestamp)
+
+    activity = (
+        db.query(
+            hour_expr.label("hour"),
+            func.count(ChatLog.id),
+        )
+        .filter(ChatLog.channel == "whatsapp")
+        .group_by(hour_expr)
+        .order_by(hour_expr)
+        .all()
+    )
+
+    return {
+        "activity_by_hour": [
+            {
+                "hour": int(hour),
+                "message_count": count,
+            }
+            for hour, count in activity
+            if hour is not None
+        ]
+    }
+
 
 @router.get("/handoff/list")
 def list_handoff_tickets(
     status: Optional[HandoffStatus] = None,
     db: Session = Depends(get_db),
 ):
-    """
-    List all handoff tickets.
-    Optional filter by status.
-    """
+    """List handoff tickets."""
     query = db.query(HandoffTicket)
-
     if status:
         query = query.filter(HandoffTicket.status == status)
 
     tickets = query.order_by(HandoffTicket.created_at.desc()).all()
-
     return {"tickets": tickets}
+
 
 @router.post("/handoff/{ticket_id}/resolve")
 def resolve_handoff_ticket(
     ticket_id: UUID,
     db: Session = Depends(get_db),
 ):
-    """
-    Resolve a handoff ticket.
-    """
-    ticket = db.query(HandoffTicket).filter(
-        HandoffTicket.id == ticket_id
-    ).first()
+    """Resolve a handoff ticket."""
+    ticket = db.query(HandoffTicket).filter(HandoffTicket.id == ticket_id).first()
 
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -196,5 +209,3 @@ def resolve_handoff_ticket(
     db.refresh(ticket)
 
     return {"message": "Ticket resolved", "ticket_id": ticket.id}
-
-

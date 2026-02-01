@@ -368,8 +368,6 @@ Each request checks:
 7. Hard cap disable
 8. Logging → billing
 
-Backend ensures no plan abuse or cost leaks.
-
 ---
 
 # 🗄️ **11. Data Retention**
@@ -387,5 +385,6 @@ Backend ensures no plan abuse or cost leaks.
 * Structured logging
 * Daily DB + FAISS snapshots
 * Stripe webhook logs
+
 
 
